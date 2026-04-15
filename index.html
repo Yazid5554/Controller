@@ -21,7 +21,6 @@
   #app {
     position: fixed;
     inset: 0;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     display: grid;
     grid-template-columns: clamp(72px, 20vw, 120px) 1fr clamp(72px, 20vw, 120px);
     gap: clamp(6px, 2vw, 16px);
@@ -31,7 +30,6 @@
     color: #fff;
   }
 
-  /* ── Side panels ── */
   .side {
     display: flex;
     flex-direction: column;
@@ -52,6 +50,7 @@
     transition: background .07s, transform .07s, border-color .07s;
     user-select: none;
     touch-action: none;
+    -webkit-user-select: none;
   }
   .ctrl-btn svg {
     width: clamp(26px, 6vw, 42px);
@@ -64,12 +63,11 @@
     transition: stroke .07s;
   }
   .ctrl-btn.pressed { background: #1f1f1f; transform: scale(0.91); border-color: #3a3a3a; }
-  .ctrl-btn.fwd.pressed svg  { stroke: #1D9E75; }
-  .ctrl-btn.bwd.pressed svg  { stroke: #e24b4a; }
+  .ctrl-btn.fwd.pressed svg { stroke: #1D9E75; }
+  .ctrl-btn.bwd.pressed svg { stroke: #e24b4a; }
   .ctrl-btn.lft.pressed svg,
-  .ctrl-btn.rgt.pressed svg  { stroke: #378ADD; }
+  .ctrl-btn.rgt.pressed svg { stroke: #378ADD; }
 
-  /* ── Center ── */
   #center {
     display: flex;
     flex-direction: column;
@@ -105,7 +103,6 @@
     font-size: clamp(10px, 1.5vw, 13px);
     color: #333;
   }
-
   #hud {
     position: absolute;
     top: 8px; left: 8px; right: 8px;
@@ -140,6 +137,7 @@
     outline: none;
   }
   #ip-input:focus { border-color: #444; }
+
   #connect-btn {
     padding: 6px 12px;
     border-radius: 7px;
@@ -150,34 +148,44 @@
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
-    transition: background .1s;
+    transition: background .1s, color .1s, border-color .1s;
   }
   #connect-btn.on { border-color: #0d5e3a; color: #1D9E75; background: #081a10; }
-  #cmd-label {
+
+  /* status di sebelah connect */
+  #cmd-pill {
     font-size: clamp(9px, 1.3vw, 12px);
-    color: #3a3a3a;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 0.5px solid #2a2a2a;
+    background: #111;
+    color: #444;
     white-space: nowrap;
     flex-shrink: 0;
-    min-width: 52px;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+    min-width: clamp(48px, 9vw, 88px);
+    text-align: center;
+    transition: color .1s, border-color .1s;
+    letter-spacing: 0.04em;
   }
+  #cmd-pill.fwd   { color: #1D9E75; border-color: #0d5e3a; }
+  #cmd-pill.bwd   { color: #e24b4a; border-color: #5a1a1a; }
+  #cmd-pill.turn  { color: #378ADD; border-color: #1a3a6a; }
+  #cmd-pill.combo { color: #EF9F27; border-color: #6a4a10; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- Kiri: maju & mundur -->
   <div class="side">
-    <div class="ctrl-btn fwd" data-cmd="FORWARD">
+    <div class="ctrl-btn fwd" data-key="fwd">
       <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
     </div>
-    <div class="ctrl-btn bwd" data-cmd="BACKWARD">
+    <div class="ctrl-btn bwd" data-key="bwd">
       <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
   </div>
 
-  <!-- Tengah: kamera + kontrol -->
   <div id="center">
     <div id="cam-feed">
       <img id="cam-img" alt="live stream">
@@ -190,19 +198,19 @@
         <span class="badge b-ping" id="ping-badge">-- ms</span>
       </div>
     </div>
+
     <div id="bottom">
       <input type="text" id="ip-input" value="192.168.4.1" placeholder="IP ESP32">
       <button id="connect-btn" onclick="toggleConnect()">Connect</button>
-      <span id="cmd-label">STOP</span>
+      <span id="cmd-pill">STOP</span>
     </div>
   </div>
 
-  <!-- Kanan: kiri & kanan -->
   <div class="side">
-    <div class="ctrl-btn lft" data-cmd="LEFT">
+    <div class="ctrl-btn lft" data-key="lft">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
-    <div class="ctrl-btn rgt" data-cmd="RIGHT">
+    <div class="ctrl-btn rgt" data-key="rgt">
       <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
   </div>
@@ -210,26 +218,65 @@
 </div>
 
 <script>
-  // Block scroll & zoom
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   document.addEventListener('touchstart', e => { if (e.target.id !== 'ip-input') e.preventDefault(); }, { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
 
-  let ws = null, connected = false, pingTimer = null, pingStart = 0;
+  const pressed = { fwd: false, bwd: false, lft: false, rgt: false };
 
-  function setCmd(cmd) {
-    document.getElementById('cmd-label').textContent = cmd;
-    if (connected && ws && ws.readyState === 1) {
-      ws.send(JSON.stringify({ cmd }));
+  function resolveCmd() {
+    const { fwd, bwd, lft, rgt } = pressed;
+    if (fwd && rgt) return { cmd: 'FWD_RIGHT',  label: 'MAJU+KANAN',   cls: 'combo' };
+    if (fwd && lft) return { cmd: 'FWD_LEFT',   label: 'MAJU+KIRI',    cls: 'combo' };
+    if (bwd && rgt) return { cmd: 'BWD_RIGHT',  label: 'MUNDUR+KANAN', cls: 'combo' };
+    if (bwd && lft) return { cmd: 'BWD_LEFT',   label: 'MUNDUR+KIRI',  cls: 'combo' };
+    if (fwd)        return { cmd: 'FORWARD',    label: 'MAJU',         cls: 'fwd'   };
+    if (bwd)        return { cmd: 'BACKWARD',   label: 'MUNDUR',       cls: 'bwd'   };
+    if (rgt)        return { cmd: 'RIGHT',      label: 'KANAN',        cls: 'turn'  };
+    if (lft)        return { cmd: 'LEFT',       label: 'KIRI',         cls: 'turn'  };
+    return           { cmd: 'STOP',      label: 'STOP',         cls: ''      };
+  }
+
+  let lastCmd = '';
+  function update() {
+    const r = resolveCmd();
+    const pill = document.getElementById('cmd-pill');
+    pill.textContent = r.label;
+    pill.className = r.cls;
+    if (r.cmd !== lastCmd) {
+      lastCmd = r.cmd;
+      if (connected && ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({ cmd: r.cmd }));
+      }
     }
   }
+
+  function setKey(key, val) {
+    pressed[key] = val;
+    document.querySelector('.ctrl-btn[data-key="' + key + '"]')?.classList.toggle('pressed', val);
+    update();
+  }
+
+  document.querySelectorAll('.ctrl-btn').forEach(btn => {
+    const key = btn.dataset.key;
+    btn.addEventListener('mousedown',   () => setKey(key, true));
+    btn.addEventListener('mouseup',     () => setKey(key, false));
+    btn.addEventListener('mouseleave',  () => setKey(key, false));
+    btn.addEventListener('touchstart',  e => { e.preventDefault(); setKey(key, true);  }, { passive: false });
+    btn.addEventListener('touchend',    e => { e.preventDefault(); setKey(key, false); }, { passive: false });
+    btn.addEventListener('touchcancel', e => { e.preventDefault(); setKey(key, false); }, { passive: false });
+  });
+
+  const keyMap = { ArrowUp:'fwd', ArrowDown:'bwd', ArrowLeft:'lft', ArrowRight:'rgt', w:'fwd', s:'bwd', a:'lft', d:'rgt' };
+  document.addEventListener('keydown', e => { if (keyMap[e.key] && !pressed[keyMap[e.key]]) setKey(keyMap[e.key], true); });
+  document.addEventListener('keyup',   e => { if (keyMap[e.key]) setKey(keyMap[e.key], false); });
+
+  let ws = null, connected = false, pingTimer = null, pingStart = 0;
 
   function toggleConnect() {
     if (connected) { ws.close(); return; }
     const ip = document.getElementById('ip-input').value.trim();
-    try {
-      ws = new WebSocket('ws://' + ip + '/ws');
-    } catch(e) { return; }
+    try { ws = new WebSocket('ws://' + ip + '/ws'); } catch(e) { return; }
 
     ws.onopen = () => {
       connected = true;
@@ -237,9 +284,9 @@
       document.getElementById('conn-badge').className = 'badge b-on';
       document.getElementById('connect-btn').textContent = 'Putus';
       document.getElementById('connect-btn').className = 'on';
-      const camImg = document.getElementById('cam-img');
-      camImg.src = 'http://' + ip + ':81/stream';
-      camImg.style.display = 'block';
+      const img = document.getElementById('cam-img');
+      img.src = 'http://' + ip + ':81/stream';
+      img.style.display = 'block';
       document.getElementById('cam-placeholder').style.display = 'none';
       pingTimer = setInterval(() => {
         if (ws.readyState === 1) { pingStart = Date.now(); ws.send(JSON.stringify({ cmd: 'PING' })); }
@@ -263,42 +310,9 @@
       document.getElementById('ping-badge').textContent = '-- ms';
       document.getElementById('cam-img').style.display = 'none';
       document.getElementById('cam-placeholder').style.display = 'flex';
-      setCmd('STOP');
+      Object.keys(pressed).forEach(k => setKey(k, false));
     };
   }
-
-  // Tombol touch & mouse
-  document.querySelectorAll('.ctrl-btn').forEach(btn => {
-    const cmd = btn.dataset.cmd;
-    const press   = () => { btn.classList.add('pressed'); setCmd(cmd); };
-    const release = () => { btn.classList.remove('pressed'); setCmd('STOP'); };
-    btn.addEventListener('mousedown',   press);
-    btn.addEventListener('mouseup',     release);
-    btn.addEventListener('mouseleave',  release);
-    btn.addEventListener('touchstart',  e => { e.preventDefault(); press(); },   { passive: false });
-    btn.addEventListener('touchend',    e => { e.preventDefault(); release(); }, { passive: false });
-    btn.addEventListener('touchcancel', e => { e.preventDefault(); release(); }, { passive: false });
-  });
-
-  // Keyboard
-  const keyMap = { ArrowUp:'FORWARD', ArrowDown:'BACKWARD', ArrowLeft:'LEFT', ArrowRight:'RIGHT', w:'FORWARD', s:'BACKWARD', a:'LEFT', d:'RIGHT' };
-  const btnByCmd = { FORWARD:'fwd', BACKWARD:'bwd', LEFT:'lft', RIGHT:'rgt' };
-  const held = new Set();
-
-  document.addEventListener('keydown', e => {
-    const cmd = keyMap[e.key];
-    if (!cmd || held.has(e.key)) return;
-    held.add(e.key);
-    document.querySelector('.ctrl-btn.' + btnByCmd[cmd])?.classList.add('pressed');
-    setCmd(cmd);
-  });
-  document.addEventListener('keyup', e => {
-    const cmd = keyMap[e.key];
-    if (!cmd) return;
-    held.delete(e.key);
-    document.querySelector('.ctrl-btn.' + btnByCmd[cmd])?.classList.remove('pressed');
-    setCmd('STOP');
-  });
 </script>
 </body>
 </html>
