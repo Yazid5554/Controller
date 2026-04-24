@@ -12,145 +12,167 @@
 
   html, body {
     width: 100%; height: 100%;
-    overflow: hidden;
-    touch-action: none;
+    overflow: hidden; touch-action: none;
     background: #0a0a0a;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
   #app {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     display: grid;
     grid-template-columns: clamp(72px, 20vw, 120px) 1fr clamp(72px, 20vw, 120px);
-    gap: clamp(6px, 2vw, 16px);
-    padding: clamp(8px, 2vw, 16px);
-    align-items: center;
-    background: #0a0a0a;
-    color: #fff;
+    gap: clamp(6px, 2vw, 14px);
+    padding: clamp(8px, 2vw, 14px);
+    background: #0a0a0a; color: #fff;
+    height: 100vh; max-height: 100vh;
   }
 
   .side {
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
     gap: clamp(8px, 3vh, 20px);
-    align-items: center;
-    justify-content: center;
-    height: 100%;
+    align-items: center; justify-content: center;
   }
 
   .ctrl-btn {
     width: clamp(68px, 18vw, 115px);
     height: clamp(68px, 18vw, 115px);
-    background: #161616;
-    border: 1.5px solid #2a2a2a;
+    background: #161616; border: 1.5px solid #2a2a2a;
     border-radius: clamp(10px, 2.5vw, 18px);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     transition: background .08s, transform .08s, border-color .08s, box-shadow .08s;
-    user-select: none;
-    touch-action: none;
-    -webkit-user-select: none;
-    position: relative;
+    user-select: none; touch-action: none; -webkit-user-select: none; flex-shrink: 0;
   }
   .ctrl-btn svg {
-    width: clamp(26px, 6vw, 42px);
-    height: clamp(26px, 6vw, 42px);
-    stroke: #3a3a3a;
-    fill: none;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    width: clamp(26px, 6vw, 42px); height: clamp(26px, 6vw, 42px);
+    stroke: #3a3a3a; fill: none;
+    stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
     transition: stroke .08s, transform .08s;
   }
-
-  /* ── Idle hover (desktop) ── */
   .ctrl-btn:hover { border-color: #3a3a3a; background: #1c1c1c; }
   .ctrl-btn:hover svg { stroke: #666; }
 
-  /* ── MAJU — hijau ── */
   .ctrl-btn.fwd.pressed {
-    background: #071a10;
-    border-color: #1D9E75;
+    background: #071a10; border-color: #1D9E75;
     box-shadow: 0 0 0 3px rgba(29,158,117,0.18), 0 0 16px rgba(29,158,117,0.22);
     transform: scale(0.92);
   }
   .ctrl-btn.fwd.pressed svg { stroke: #1D9E75; transform: scale(1.12); }
-
-  /* ── MUNDUR — merah ── */
   .ctrl-btn.bwd.pressed {
-    background: #1a0808;
-    border-color: #e24b4a;
+    background: #1a0808; border-color: #e24b4a;
     box-shadow: 0 0 0 3px rgba(226,75,74,0.18), 0 0 16px rgba(226,75,74,0.22);
     transform: scale(0.92);
   }
   .ctrl-btn.bwd.pressed svg { stroke: #e24b4a; transform: scale(1.12); }
-
-  /* ── KIRI / KANAN — biru ── */
-  .ctrl-btn.lft.pressed,
-  .ctrl-btn.rgt.pressed {
-    background: #071018;
-    border-color: #378ADD;
+  .ctrl-btn.lft.pressed, .ctrl-btn.rgt.pressed {
+    background: #071018; border-color: #378ADD;
     box-shadow: 0 0 0 3px rgba(55,138,221,0.18), 0 0 16px rgba(55,138,221,0.22);
     transform: scale(0.92);
   }
-  .ctrl-btn.lft.pressed svg,
-  .ctrl-btn.rgt.pressed svg { stroke: #378ADD; transform: scale(1.12); }
+  .ctrl-btn.lft.pressed svg, .ctrl-btn.rgt.pressed svg { stroke: #378ADD; transform: scale(1.12); }
 
-  /* ── Kamera ── */
+  /* center */
   #center {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(5px, 1.5vh, 10px);
-    height: 100%;
-    justify-content: center;
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    gap: clamp(4px, 1vh, 8px);
+    min-height: 0; height: 100%;
   }
+
   #cam-feed {
-    flex: 1;
-    min-height: 0;
-    background: #0f0f0f;
+    min-height: 0; background: #0f0f0f;
     border-radius: clamp(6px, 1.5vw, 12px);
     border: 0.5px solid #1e1e1e;
     display: flex; align-items: center; justify-content: center;
     position: relative; overflow: hidden;
   }
-  #cam-feed img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  #cam-img { width: 100%; height: 100%; object-fit: cover; display: none; }
   #cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  #cam-placeholder svg { width: clamp(24px,5vw,36px); height: clamp(24px,5vw,36px); stroke: #333; fill: none; }
-  #cam-placeholder span { font-size: clamp(10px,1.5vw,13px); color: #333; }
+  #cam-placeholder svg { width: clamp(24px,5vw,36px); height: clamp(24px,5vw,36px); stroke: #2a2a2a; fill: none; }
+  #cam-placeholder span { font-size: clamp(10px,1.5vw,13px); color: #2a2a2a; }
+  #cam-loading { display: none; flex-direction: column; align-items: center; gap: 8px; }
+  .spinner {
+    width: 26px; height: 26px;
+    border: 2px solid #2a2a2a; border-top-color: #7F77DD;
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #cam-loading span { font-size: clamp(10px,1.5vw,12px); color: #555; }
 
+  /* HUD — kecil di pojok, info saja */
   #hud {
-    position: absolute;
-    top: 8px; left: 8px; right: 8px;
+    position: absolute; top: 8px; left: 8px; right: 8px;
     display: flex; justify-content: space-between; align-items: center;
     pointer-events: none;
   }
-  .badge { font-size: clamp(9px,1.2vw,11px); padding: 2px 8px; border-radius: 20px; font-weight: 500; }
-  .b-off  { background: #1a0808; color: #e24b4a; border: 0.5px solid #5a1a1a; }
-  .b-on   { background: #081a10; color: #1D9E75; border: 0.5px solid #0d5e3a; }
-  .b-ping { background: #0e0e1c; color: #7F77DD; border: 0.5px solid #322d7a; font-variant-numeric: tabular-nums; }
-
-  /* ── Bottom bar ── */
-  #bottom { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  #ip-input {
-    flex: 1; min-width: 0;
-    background: #111; border: 0.5px solid #2a2a2a; border-radius: 7px;
-    color: #aaa; font-size: clamp(10px,1.4vw,13px); padding: 6px 9px; outline: none;
+  #ws-status {
+    font-size: clamp(8px,1.1vw,10px);
+    padding: 2px 7px; border-radius: 20px; font-weight: 500;
+    opacity: 0.7;
   }
-  #ip-input:focus { border-color: #444; }
-  #connect-btn {
-    padding: 6px 12px; border-radius: 7px; border: 0.5px solid #2a2a2a;
-    background: #161616; color: #888; font-size: clamp(10px,1.4vw,13px);
+  .ws-off { background: #1a0808; color: #c04040; border: 0.5px solid #4a1a1a; }
+  .ws-on  { background: #081a10; color: #159060; border: 0.5px solid #0a4a28; }
+
+  #ping-badge {
+    font-size: clamp(8px,1.1vw,10px);
+    padding: 2px 7px; border-radius: 20px;
+    background: #0e0e1c; color: #5550aa; border: 0.5px solid #252270;
+    font-variant-numeric: tabular-nums; opacity: 0.7;
+  }
+
+  /* bottom bars */
+  .bar {
+    display: flex; align-items: center;
+    gap: 5px; flex-shrink: 0;
+    height: clamp(28px, 5vh, 38px);
+  }
+  .bar-label { font-size: 13px; flex-shrink: 0; }
+
+  input.ip {
+    flex: 1; min-width: 0; height: 100%;
+    background: #111; border: 0.5px solid #2a2a2a; border-radius: 7px;
+    color: #aaa; font-size: clamp(10px,1.4vw,13px); padding: 0 8px; outline: none;
+  }
+  input.ip:focus { border-color: #444; }
+  input.port {
+    width: clamp(36px,7vw,52px); height: 100%;
+    background: #111; border: 0.5px solid #2a2a2a; border-radius: 7px;
+    color: #aaa; font-size: clamp(10px,1.4vw,13px); padding: 0 6px; outline: none;
+    text-align: center; flex-shrink: 0;
+  }
+  input.port:focus { border-color: #444; }
+
+  .bar-btn {
+    height: 100%; padding: 0 10px; border-radius: 7px;
+    border: 0.5px solid #2a2a2a; background: #161616;
+    color: #888; font-size: clamp(9px,1.3vw,12px);
     cursor: pointer; white-space: nowrap; flex-shrink: 0;
     transition: background .1s, color .1s, border-color .1s;
   }
-  #connect-btn.on { border-color: #0d5e3a; color: #1D9E75; background: #081a10; }
+  .bar-btn.ws-on       { border-color: #0d5e3a; color: #1D9E75; background: #081a10; }
+  .bar-btn.cam-active  { border-color: #7F77DD; color: #7F77DD; background: #0e0e1c; }
 
+  /* badge kamera */
+  .cam-badge {
+    height: 100%; display: flex; align-items: center;
+    padding: 0 8px; border-radius: 7px;
+    font-size: clamp(9px,1.2vw,11px); font-weight: 500;
+    white-space: nowrap; flex-shrink: 0;
+    transition: color .1s, border-color .1s, background .1s;
+  }
+  .cam-badge.off      { background: #111; color: #444; border: 0.5px solid #2a2a2a; }
+  .cam-badge.noconn   { background: #1a0e08; color: #c07040; border: 0.5px solid #5a3010; }
+  .cam-badge.live     { background: #081a10; color: #1D9E75; border: 0.5px solid #0d5e3a; }
+  .cam-badge.loading  { background: #0e0e1c; color: #7F77DD; border: 0.5px solid #322d7a; }
+
+  /* cmd pill */
   #cmd-pill {
-    font-size: clamp(9px,1.3vw,12px); font-weight: 500;
-    padding: 6px 10px; border-radius: 7px; border: 0.5px solid #2a2a2a;
-    background: #111; color: #444; white-space: nowrap; flex-shrink: 0;
-    min-width: clamp(48px,9vw,88px); text-align: center;
+    height: 100%; display: flex; align-items: center;
+    padding: 0 10px; border-radius: 7px;
+    border: 0.5px solid #2a2a2a; background: #111;
+    color: #444; font-size: clamp(9px,1.3vw,12px); font-weight: 500;
+    white-space: nowrap; flex-shrink: 0;
+    min-width: clamp(44px,8vw,80px); justify-content: center;
     transition: color .1s, border-color .1s; letter-spacing: 0.04em;
   }
   #cmd-pill.fwd   { color: #1D9E75; border-color: #0d5e3a; }
@@ -178,14 +200,30 @@
         <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M7 6V4h4v2"/></svg>
         <span>Kamera offline</span>
       </div>
+      <div id="cam-loading">
+        <div class="spinner"></div>
+        <span>Connecting...</span>
+      </div>
       <div id="hud">
-        <span class="badge b-off" id="conn-badge">Terputus</span>
-        <span class="badge b-ping" id="ping-badge">-- ms</span>
+        <span id="ws-status" class="ws-off">WS: Off</span>
+        <span id="ping-badge">--ms</span>
       </div>
     </div>
-    <div id="bottom">
-      <input type="text" id="ip-input" value="192.168.4.1" placeholder="IP ESP32">
-      <button id="connect-btn" onclick="toggleConnect()">Connect</button>
+
+    <!-- Bar kamera -->
+    <div class="bar">
+      <span class="bar-label">📷</span>
+      <input class="ip" type="text" id="cam-ip" value="192.168.4.2" placeholder="IP Kamera">
+      <input class="port" type="text" id="cam-port" value="81" placeholder="Port">
+      <button class="bar-btn" id="cam-btn" onclick="toggleCam()">Stream</button>
+      <span class="cam-badge off" id="cam-badge">Off</span>
+    </div>
+
+    <!-- Bar kontrol -->
+    <div class="bar">
+      <span class="bar-label">🎮</span>
+      <input class="ip" type="text" id="ws-ip" value="192.168.4.1" placeholder="IP ESP32">
+      <button class="bar-btn" id="connect-btn" onclick="toggleConnect()">Connect</button>
       <span id="cmd-pill">STOP</span>
     </div>
   </div>
@@ -202,9 +240,58 @@
 </div>
 <script>
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  document.addEventListener('touchstart', e => { if (e.target.id !== 'ip-input') e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchstart', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); }, { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
 
+  // ── Kamera ──
+  let camActive = false;
+
+  function toggleCam() { camActive ? stopCam() : startCam(); }
+
+  function startCam() {
+    const ip   = document.getElementById('cam-ip').value.trim();
+    const port = document.getElementById('cam-port').value.trim();
+
+    document.getElementById('cam-placeholder').style.display = 'none';
+    document.getElementById('cam-loading').style.display = 'flex';
+    setCamBadge('loading', 'Connecting...');
+
+    const img = document.getElementById('cam-img');
+    img.onload = () => {
+      camActive = true;
+      document.getElementById('cam-loading').style.display = 'none';
+      img.style.display = 'block';
+      document.getElementById('cam-btn').textContent = 'Stop';
+      document.getElementById('cam-btn').className = 'bar-btn cam-active';
+      setCamBadge('live', 'Live');
+    };
+    img.onerror = () => {
+      document.getElementById('cam-loading').style.display = 'none';
+      document.getElementById('cam-placeholder').style.display = 'flex';
+      document.getElementById('cam-btn').textContent = 'Stream';
+      document.getElementById('cam-btn').className = 'bar-btn';
+      setCamBadge('noconn', 'No Conn');
+    };
+    img.src = 'http://' + ip + ':' + port + '/stream';
+  }
+
+  function stopCam() {
+    camActive = false;
+    const img = document.getElementById('cam-img');
+    img.src = ''; img.style.display = 'none';
+    document.getElementById('cam-placeholder').style.display = 'flex';
+    document.getElementById('cam-btn').textContent = 'Stream';
+    document.getElementById('cam-btn').className = 'bar-btn';
+    setCamBadge('off', 'Off');
+  }
+
+  function setCamBadge(cls, txt) {
+    const b = document.getElementById('cam-badge');
+    b.className = 'cam-badge ' + cls;
+    b.textContent = txt;
+  }
+
+  // ── Drive logic ──
   const pressed = { fwd: false, bwd: false, lft: false, rgt: false };
 
   function resolveCmd() {
@@ -252,38 +339,37 @@
   document.addEventListener('keydown', e => { if (keyMap[e.key] && !pressed[keyMap[e.key]]) setKey(keyMap[e.key], true); });
   document.addEventListener('keyup',   e => { if (keyMap[e.key]) setKey(keyMap[e.key], false); });
 
+  // ── WebSocket ──
   let ws = null, connected = false, pingTimer = null, pingStart = 0;
 
   function toggleConnect() {
     if (connected) { ws.close(); return; }
-    const ip = document.getElementById('ip-input').value.trim();
+    const ip = document.getElementById('ws-ip').value.trim();
     try { ws = new WebSocket('ws://' + ip + '/ws'); } catch(e) { return; }
+
     ws.onopen = () => {
       connected = true;
-      document.getElementById('conn-badge').textContent = 'Live';
-      document.getElementById('conn-badge').className = 'badge b-on';
+      document.getElementById('ws-status').textContent = 'WS: On';
+      document.getElementById('ws-status').className = 'ws-on';
       document.getElementById('connect-btn').textContent = 'Putus';
-      document.getElementById('connect-btn').className = 'on';
-      const img = document.getElementById('cam-img');
-      img.src = 'http://' + ip + ':81/stream';
-      img.style.display = 'block';
-      document.getElementById('cam-placeholder').style.display = 'none';
+      document.getElementById('connect-btn').className = 'bar-btn ws-on';
       pingTimer = setInterval(() => {
         if (ws.readyState === 1) { pingStart = Date.now(); ws.send(JSON.stringify({ cmd: 'PING' })); }
       }, 2000);
     };
     ws.onmessage = e => {
-      try { const d = JSON.parse(e.data); if (d.type === 'PONG') document.getElementById('ping-badge').textContent = (Date.now() - pingStart) + ' ms'; } catch(_) {}
+      try {
+        const d = JSON.parse(e.data);
+        if (d.type === 'PONG') document.getElementById('ping-badge').textContent = (Date.now() - pingStart) + 'ms';
+      } catch(_) {}
     };
     ws.onclose = () => {
       connected = false; clearInterval(pingTimer);
-      document.getElementById('conn-badge').textContent = 'Terputus';
-      document.getElementById('conn-badge').className = 'badge b-off';
+      document.getElementById('ws-status').textContent = 'WS: Off';
+      document.getElementById('ws-status').className = 'ws-off';
       document.getElementById('connect-btn').textContent = 'Connect';
-      document.getElementById('connect-btn').className = '';
-      document.getElementById('ping-badge').textContent = '-- ms';
-      document.getElementById('cam-img').style.display = 'none';
-      document.getElementById('cam-placeholder').style.display = 'flex';
+      document.getElementById('connect-btn').className = 'bar-btn';
+      document.getElementById('ping-badge').textContent = '--ms';
       Object.keys(pressed).forEach(k => setKey(k, false));
     };
   }
