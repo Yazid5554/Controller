@@ -250,7 +250,7 @@
 </div>
 <script>
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  document.addEventListener('touchstart', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchstart', e => { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') e.preventDefault(); }, { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
 
   // ── Kamera ──
