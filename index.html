@@ -1,384 +1,668 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>FPV RC Car</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FPV RC Tank</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden; touch-action: none;
-    background: #0a0a0a;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      background: #0a0a0a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
 
-  #app {
-    position: fixed;
-    /* safe area buat HP dengan notch */
-    top: env(safe-area-inset-top, 0px);
-    left: env(safe-area-inset-left, 0px);
-    right: env(safe-area-inset-right, 0px);
-    bottom: env(safe-area-inset-bottom, 0px);
-    display: grid;
-    grid-template-columns: clamp(60px, 17vw, 105px) 1fr clamp(60px, 17vw, 105px);
-    gap: clamp(4px, 1.2vw, 10px);
-    padding: clamp(4px, 1.2vw, 10px);
-    background: #0a0a0a; color: #fff;
-    /* kunci total height */
-    overflow: hidden;
-  }
+    #app {
+      position: fixed;
+      top: env(safe-area-inset-top, 0px);
+      left: env(safe-area-inset-left, 0px);
+      right: env(safe-area-inset-right, 0px);
+      bottom: env(safe-area-inset-bottom, 0px);
+      display: grid;
+      grid-template-columns: clamp(60px, 17vw, 105px) 1fr clamp(60px, 17vw, 105px);
+      gap: clamp(4px, 1.2vw, 10px);
+      padding: clamp(4px, 1.2vw, 10px);
+      background: #0a0a0a;
+      color: #fff;
+      overflow: hidden;
+    }
 
-  /* ── Side panels ── */
-  .side {
-    display: flex; flex-direction: column;
-    gap: clamp(5px, 1.5vh, 14px);
-    align-items: center; justify-content: center;
-    overflow: hidden;
-  }
+    /* ── Slider Panel ── */
+    .side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: stretch;
+      overflow: hidden;
+      padding: 6px 0;
+      gap: 5px;
+    }
 
-  .ctrl-btn {
-    /* pakai vh supaya tombol tidak lebih gede dari layar */
-    width: clamp(54px, 15vw, 100px);
-    height: clamp(54px, 15vw, 100px);
-    /* max 40% tinggi layar biar 2 tombol + gap muat */
-    max-height: 40vh;
-    aspect-ratio: 1;
-    background: #161616; border: 1.5px solid #2a2a2a;
-    border-radius: clamp(8px, 2vw, 16px);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: background .08s, transform .08s, border-color .08s, box-shadow .08s;
-    user-select: none; touch-action: none; -webkit-user-select: none;
-    flex-shrink: 0;
-  }
-  .ctrl-btn svg {
-    width: 40%; height: 40%;
-    stroke: #3a3a3a; fill: none;
-    stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
-    transition: stroke .08s, transform .08s;
-  }
-  .ctrl-btn:hover { border-color: #3a3a3a; background: #1c1c1c; }
-  .ctrl-btn:hover svg { stroke: #666; }
+    .track-label {
+      font-size: clamp(9px, 1.2vw, 11px);
+      color: #444;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      text-align: center;
+    }
 
-  .ctrl-btn.fwd.pressed {
-    background: #071a10; border-color: #1D9E75;
-    box-shadow: 0 0 0 3px rgba(29,158,117,0.18), 0 0 14px rgba(29,158,117,0.2);
-    transform: scale(0.92);
-  }
-  .ctrl-btn.fwd.pressed svg { stroke: #1D9E75; transform: scale(1.1); }
-  .ctrl-btn.bwd.pressed {
-    background: #1a0808; border-color: #e24b4a;
-    box-shadow: 0 0 0 3px rgba(226,75,74,0.18), 0 0 14px rgba(226,75,74,0.2);
-    transform: scale(0.92);
-  }
-  .ctrl-btn.bwd.pressed svg { stroke: #e24b4a; transform: scale(1.1); }
-  .ctrl-btn.lft.pressed, .ctrl-btn.rgt.pressed {
-    background: #071018; border-color: #378ADD;
-    box-shadow: 0 0 0 3px rgba(55,138,221,0.18), 0 0 14px rgba(55,138,221,0.2);
-    transform: scale(0.92);
-  }
-  .ctrl-btn.lft.pressed svg, .ctrl-btn.rgt.pressed svg { stroke: #378ADD; transform: scale(1.1); }
+    .pct-display {
+      font-size: clamp(11px, 1.6vw, 14px);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #555;
+      flex-shrink: 0;
+      transition: color 0.1s;
+      min-width: 52px;
+      text-align: center;
+    }
 
-  /* ── Center: kamera + 2 bar bawah ── */
-  #center {
-    display: grid;
-    /* kamera ambil semua sisa, 2 bar fixed pakai px kecil */
-    grid-template-rows: 1fr clamp(26px,4.5vh,36px) clamp(26px,4.5vh,36px);
-    gap: clamp(3px, 0.8vh, 6px);
-    min-height: 0;
-    overflow: hidden;
-  }
+    .pct-display.fwd {
+      color: #1D9E75;
+    }
 
-  /* ── Kamera ── */
-  #cam-feed {
-    min-height: 0; background: #0f0f0f;
-    border-radius: clamp(5px, 1.2vw, 10px);
-    border: 0.5px solid #1e1e1e;
-    display: flex; align-items: center; justify-content: center;
-    position: relative; overflow: hidden;
-  }
-  #cam-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-  #cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  #cam-placeholder svg { width: clamp(20px,4vw,30px); height: clamp(20px,4vw,30px); stroke: #2a2a2a; fill: none; }
-  #cam-placeholder span { font-size: clamp(9px,1.3vw,12px); color: #2a2a2a; }
-  #cam-loading { display: none; flex-direction: column; align-items: center; gap: 6px; }
-  .spinner {
-    width: 22px; height: 22px;
-    border: 2px solid #2a2a2a; border-top-color: #7F77DD;
-    border-radius: 50%; animation: spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #cam-loading span { font-size: clamp(9px,1.3vw,11px); color: #555; }
+    .pct-display.bwd {
+      color: #e24b4a;
+    }
 
-  #hud {
-    position: absolute; top: 6px; left: 6px; right: 6px;
-    display: flex; justify-content: space-between;
-    pointer-events: none;
-  }
-  #ws-status {
-    font-size: clamp(8px,1vw,10px); padding: 2px 6px;
-    border-radius: 20px; font-weight: 500; opacity: 0.75;
-  }
-  .ws-off { background: #1a0808; color: #c04040; border: 0.5px solid #4a1a1a; }
-  .ws-on  { background: #081a10; color: #159060; border: 0.5px solid #0a4a28; }
-  #ping-badge {
-    font-size: clamp(8px,1vw,10px); padding: 2px 6px; border-radius: 20px;
-    background: #0e0e1c; color: #5550aa; border: 0.5px solid #252270;
-    font-variant-numeric: tabular-nums; opacity: 0.75;
-  }
+    .vslider-track {
+      flex: 1;
+      width: clamp(44px, 12vw, 76px);
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 999px;
+      position: relative;
+      touch-action: none;
+      cursor: pointer;
+      /* min-height agar tidak hilang */
+      min-height: 80px;
+    }
 
-  /* ── Bottom bars ── */
-  .bar {
-    display: flex; align-items: center;
-    gap: 4px; flex-shrink: 0;
-    overflow: hidden;
-    /* tinggi dari grid row */
-    height: 100%;
-  }
-  .bar-label { font-size: 12px; flex-shrink: 0; }
+    /* garis tengah */
+    .vslider-track::before {
+      content: '';
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      top: 50%;
+      height: 1px;
+      background: #2a2a2a;
+    }
 
-  input.ip {
-    flex: 1; min-width: 0; height: 100%;
-    background: #111; border: 0.5px solid #2a2a2a; border-radius: 6px;
-    color: #aaa; font-size: clamp(9px,1.3vw,12px); padding: 0 7px; outline: none;
-  }
-  input.ip:focus { border-color: #444; }
-  input.port {
-    width: clamp(32px,6vw,46px); height: 100%; flex-shrink: 0;
-    background: #111; border: 0.5px solid #2a2a2a; border-radius: 6px;
-    color: #aaa; font-size: clamp(9px,1.3vw,12px); padding: 0 5px;
-    text-align: center; outline: none;
-  }
-  input.port:focus { border-color: #444; }
+    .vslider-fill {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 35%;
+      border-radius: 999px;
+      pointer-events: none;
+      /* default hidden */
+      height: 0;
+      top: 50%;
+    }
 
-  .bar-btn {
-    height: 100%; padding: 0 9px; border-radius: 6px;
-    border: 0.5px solid #2a2a2a; background: #161616;
-    color: #888; font-size: clamp(9px,1.2vw,12px);
-    cursor: pointer; white-space: nowrap; flex-shrink: 0;
-    transition: background .1s, color .1s, border-color .1s;
-  }
-  .bar-btn.ws-on      { border-color: #0d5e3a; color: #1D9E75; background: #081a10; }
-  .bar-btn.cam-active { border-color: #7F77DD; color: #7F77DD; background: #0e0e1c; }
+    .vslider-thumb {
+      position: absolute;
+      left: 50%;
+      /* FIX: top default 50% via CSS, bukan JS saja */
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(32px, 8vw, 52px);
+      height: clamp(32px, 8vw, 52px);
+      background: #1c1c1c;
+      border: 1.5px solid #2a2a2a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.08s, background 0.08s, box-shadow 0.08s;
+      pointer-events: none;
+    }
 
-  .cam-badge {
-    height: 100%; display: flex; align-items: center;
-    padding: 0 7px; border-radius: 6px;
-    font-size: clamp(9px,1.2vw,11px); font-weight: 500;
-    white-space: nowrap; flex-shrink: 0;
-    transition: color .1s, border-color .1s, background .1s;
-  }
-  .cam-badge.off    { background: #111; color: #444; border: 0.5px solid #2a2a2a; }
-  .cam-badge.noconn { background: #1a0e08; color: #c07040; border: 0.5px solid #5a3010; }
-  .cam-badge.live   { background: #081a10; color: #1D9E75; border: 0.5px solid #0d5e3a; }
-  .cam-badge.loading{ background: #0e0e1c; color: #7F77DD; border: 0.5px solid #322d7a; }
+    .vslider-thumb svg {
+      width: 40%;
+      height: 40%;
+      stroke: #333;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.08s;
+    }
 
-  #cmd-pill {
-    height: 100%; display: flex; align-items: center;
-    padding: 0 8px; border-radius: 6px;
-    border: 0.5px solid #2a2a2a; background: #111;
-    color: #444; font-size: clamp(9px,1.2vw,11px); font-weight: 500;
-    white-space: nowrap; flex-shrink: 0;
-    min-width: clamp(40px,7vw,72px); justify-content: center;
-    transition: color .1s, border-color .1s; letter-spacing: 0.03em;
-  }
-  #cmd-pill.fwd   { color: #1D9E75; border-color: #0d5e3a; }
-  #cmd-pill.bwd   { color: #e24b4a; border-color: #5a1a1a; }
-  #cmd-pill.turn  { color: #378ADD; border-color: #1a3a6a; }
-  #cmd-pill.combo { color: #EF9F27; border-color: #6a4a10; }
-</style>
+    .vslider-track.fwd .vslider-fill {
+      background: linear-gradient(to top, #1D9E75, #0d5e3a);
+    }
+
+    .vslider-track.bwd .vslider-fill {
+      background: linear-gradient(to bottom, #e24b4a, #7a1a1a);
+    }
+
+    .vslider-track.fwd .vslider-thumb {
+      border-color: #1D9E75;
+      background: #071a10;
+      box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15), 0 0 14px rgba(29, 158, 117, 0.18);
+    }
+
+    .vslider-track.fwd .vslider-thumb svg {
+      stroke: #1D9E75;
+    }
+
+    .vslider-track.bwd .vslider-thumb {
+      border-color: #e24b4a;
+      background: #1a0808;
+      box-shadow: 0 0 0 3px rgba(226, 75, 74, 0.15), 0 0 14px rgba(226, 75, 74, 0.18);
+    }
+
+    .vslider-track.bwd .vslider-thumb svg {
+      stroke: #e24b4a;
+    }
+
+    /* ── Center ── */
+    #center {
+      display: grid;
+      grid-template-rows: 1fr clamp(26px, 4.5vh, 36px) clamp(26px, 4.5vh, 36px);
+      gap: clamp(3px, 0.8vh, 6px);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #cam-feed {
+      min-height: 0;
+      background: #0f0f0f;
+      border-radius: clamp(5px, 1.2vw, 10px);
+      border: 0.5px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #cam-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    #cam-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #cam-placeholder svg {
+      width: clamp(20px, 4vw, 30px);
+      height: clamp(20px, 4vw, 30px);
+      stroke: #2a2a2a;
+      fill: none;
+    }
+
+    #cam-placeholder span {
+      font-size: clamp(9px, 1.3vw, 12px);
+      color: #2a2a2a;
+    }
+
+    #cam-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #2a2a2a;
+      border-top-color: #7F77DD;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #cam-loading span {
+      font-size: clamp(9px, 1.3vw, 11px);
+      color: #555;
+    }
+
+    #hud {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      right: 6px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    #ws-status {
+      font-size: clamp(8px, 1vw, 10px);
+      padding: 2px 6px;
+      border-radius: 20px;
+      font-weight: 500;
+      opacity: 0.75;
+    }
+
+    .ws-off {
+      background: #1a0808;
+      color: #c04040;
+      border: 0.5px solid #4a1a1a;
+    }
+
+    .ws-on {
+      background: #081a10;
+      color: #159060;
+      border: 0.5px solid #0a4a28;
+    }
+
+    #ping-badge {
+      font-size: clamp(8px, 1vw, 10px);
+      padding: 2px 6px;
+      border-radius: 20px;
+      background: #0e0e1c;
+      color: #5550aa;
+      border: 0.5px solid #252270;
+      font-variant-numeric: tabular-nums;
+      opacity: 0.75;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .bar-label {
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    input.ip {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      background: #111;
+      border: 0.5px solid #2a2a2a;
+      border-radius: 6px;
+      color: #aaa;
+      font-size: clamp(9px, 1.3vw, 12px);
+      padding: 0 7px;
+      outline: none;
+    }
+
+    input.ip:focus {
+      border-color: #444;
+    }
+
+    input.port {
+      width: clamp(32px, 6vw, 46px);
+      height: 100%;
+      flex-shrink: 0;
+      background: #111;
+      border: 0.5px solid #2a2a2a;
+      border-radius: 6px;
+      color: #aaa;
+      font-size: clamp(9px, 1.3vw, 12px);
+      padding: 0 5px;
+      text-align: center;
+      outline: none;
+    }
+
+    input.port:focus {
+      border-color: #444;
+    }
+
+    .bar-btn {
+      height: 100%;
+      padding: 0 9px;
+      border-radius: 6px;
+      border: 0.5px solid #2a2a2a;
+      background: #161616;
+      color: #888;
+      font-size: clamp(9px, 1.2vw, 12px);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background .1s, color .1s, border-color .1s;
+    }
+
+    .bar-btn.ws-on {
+      border-color: #0d5e3a;
+      color: #1D9E75;
+      background: #081a10;
+    }
+
+    .bar-btn.cam-active {
+      border-color: #7F77DD;
+      color: #7F77DD;
+      background: #0e0e1c;
+    }
+
+    .cam-badge {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 7px;
+      border-radius: 6px;
+      font-size: clamp(9px, 1.2vw, 11px);
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: color .1s, border-color .1s, background .1s;
+    }
+
+    .cam-badge.off {
+      background: #111;
+      color: #444;
+      border: 0.5px solid #2a2a2a;
+    }
+
+    .cam-badge.noconn {
+      background: #1a0e08;
+      color: #c07040;
+      border: 0.5px solid #5a3010;
+    }
+
+    .cam-badge.live {
+      background: #081a10;
+      color: #1D9E75;
+      border: 0.5px solid #0d5e3a;
+    }
+
+    .cam-badge.loading {
+      background: #0e0e1c;
+      color: #7F77DD;
+      border: 0.5px solid #322d7a;
+    }
+  </style>
 </head>
+
 <body>
-<div id="app">
+  <div id="app">
 
-  <div class="side">
-    <div class="ctrl-btn fwd" data-key="fwd">
-      <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-    </div>
-    <div class="ctrl-btn bwd" data-key="bwd">
-      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-  </div>
-
-  <div id="center">
-    <div id="cam-feed">
-      <img id="cam-img" alt="live stream">
-      <div id="cam-placeholder">
-        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M7 6V4h4v2"/></svg>
-        <span>Kamera offline</span>
-      </div>
-      <div id="cam-loading">
-        <div class="spinner"></div>
-        <span>Connecting...</span>
-      </div>
-      <div id="hud">
-        <span id="ws-status" class="ws-off">WS: Off</span>
-        <span id="ping-badge">--ms</span>
+    <div class="side">
+      <span class="track-label">L</span>
+      <span class="pct-display" id="pct-left">0%</span>
+      <div class="vslider-track" id="slider-left">
+        <div class="vslider-fill" id="fill-left"></div>
+        <div class="vslider-thumb" id="thumb-left">
+          <svg viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <polyline points="8 9 12 5 16 9" />
+            <polyline points="8 15 12 19 16 15" />
+          </svg>
+        </div>
       </div>
     </div>
 
-    <div class="bar">
-      <span class="bar-label">📷</span>
-      <input class="ip" type="text" id="cam-ip" value="192.168.4.2" placeholder="IP Kamera">
-      <input class="port" type="text" id="cam-port" value="81" placeholder="Port">
-      <button class="bar-btn" id="cam-btn" onclick="toggleCam()">Stream</button>
-      <span class="cam-badge off" id="cam-badge">Off</span>
+    <div id="center">
+      <div id="cam-feed">
+        <img id="cam-img" alt="live stream">
+        <div id="cam-placeholder">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="6" width="20" height="14" rx="2" />
+            <circle cx="12" cy="13" r="3" />
+            <path d="M7 6V4h4v2" />
+          </svg>
+          <span>Kamera offline</span>
+        </div>
+        <div id="cam-loading">
+          <div class="spinner"></div>
+          <span>Connecting...</span>
+        </div>
+        <div id="hud">
+          <span id="ws-status" class="ws-off">WS: Off</span>
+          <span id="ping-badge">--ms</span>
+        </div>
+      </div>
+      <div class="bar">
+        <span class="bar-label">📷</span>
+        <input class="ip" type="text" id="cam-ip" value="192.168.4.2" placeholder="IP Kamera">
+        <input class="port" type="text" id="cam-port" value="81" placeholder="Port">
+        <button class="bar-btn" id="cam-btn" onclick="toggleCam()">Stream</button>
+        <span class="cam-badge off" id="cam-badge">Off</span>
+      </div>
+      <div class="bar">
+        <span class="bar-label">🎮</span>
+        <input class="ip" type="text" id="ws-ip" value="192.168.4.1" placeholder="IP ESP32">
+        <button class="bar-btn" id="connect-btn" onclick="toggleConnect()">Connect</button>
+      </div>
     </div>
 
-    <div class="bar">
-      <span class="bar-label">🎮</span>
-      <input class="ip" type="text" id="ws-ip" value="192.168.4.1" placeholder="IP ESP32">
-      <button class="bar-btn" id="connect-btn" onclick="toggleConnect()">Connect</button>
-      <span id="cmd-pill">STOP</span>
+    <div class="side">
+      <span class="track-label">R</span>
+      <span class="pct-display" id="pct-right">0%</span>
+      <div class="vslider-track" id="slider-right">
+        <div class="vslider-fill" id="fill-right"></div>
+        <div class="vslider-thumb" id="thumb-right">
+          <svg viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <polyline points="8 9 12 5 16 9" />
+            <polyline points="8 15 12 19 16 15" />
+          </svg>
+        </div>
+      </div>
     </div>
+
   </div>
+  <script>
+    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    document.addEventListener('touchstart', e => {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('gesturestart', e => e.preventDefault());
 
-  <div class="side">
-    <div class="ctrl-btn lft" data-key="lft">
-      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-    </div>
-    <div class="ctrl-btn rgt" data-key="rgt">
-      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-  </div>
-
-</div>
-<script>
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  document.addEventListener('touchstart', e => { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') e.preventDefault(); }, { passive: false });
-  document.addEventListener('gesturestart', e => e.preventDefault());
-
-  // ── Kamera ──
-  let camActive = false;
-  function toggleCam() { camActive ? stopCam() : startCam(); }
-
-  function startCam() {
-    const ip   = document.getElementById('cam-ip').value.trim();
-    const port = document.getElementById('cam-port').value.trim();
-    document.getElementById('cam-placeholder').style.display = 'none';
-    document.getElementById('cam-loading').style.display = 'flex';
-    setCamBadge('loading', 'Connecting...');
-    const img = document.getElementById('cam-img');
-    img.onload = () => {
-      camActive = true;
-      document.getElementById('cam-loading').style.display = 'none';
-      img.style.display = 'block';
-      document.getElementById('cam-btn').textContent = 'Stop';
-      document.getElementById('cam-btn').className = 'bar-btn cam-active';
-      setCamBadge('live', 'Live');
-    };
-    img.onerror = () => {
-      document.getElementById('cam-loading').style.display = 'none';
+    // ── Camera ──
+    let camActive = false;
+    function toggleCam() { camActive ? stopCam() : startCam(); }
+    function startCam() {
+      const ip = document.getElementById('cam-ip').value.trim();
+      const port = document.getElementById('cam-port').value.trim();
+      document.getElementById('cam-placeholder').style.display = 'none';
+      document.getElementById('cam-loading').style.display = 'flex';
+      setCamBadge('loading', 'Connecting...');
+      const img = document.getElementById('cam-img');
+      img.onload = () => {
+        camActive = true;
+        document.getElementById('cam-loading').style.display = 'none';
+        img.style.display = 'block';
+        document.getElementById('cam-btn').textContent = 'Stop';
+        document.getElementById('cam-btn').className = 'bar-btn cam-active';
+        setCamBadge('live', 'Live');
+      };
+      img.onerror = () => {
+        document.getElementById('cam-loading').style.display = 'none';
+        document.getElementById('cam-placeholder').style.display = 'flex';
+        document.getElementById('cam-btn').textContent = 'Stream';
+        document.getElementById('cam-btn').className = 'bar-btn';
+        setCamBadge('noconn', 'No Conn');
+      };
+      img.src = 'http://' + ip + ':' + port + '/stream';
+    }
+    function stopCam() {
+      camActive = false;
+      const img = document.getElementById('cam-img');
+      img.src = ''; img.style.display = 'none';
       document.getElementById('cam-placeholder').style.display = 'flex';
       document.getElementById('cam-btn').textContent = 'Stream';
       document.getElementById('cam-btn').className = 'bar-btn';
-      setCamBadge('noconn', 'No Conn');
-    };
-    img.src = 'http://' + ip + ':' + port + '/stream';
-  }
-
-  function stopCam() {
-    camActive = false;
-    const img = document.getElementById('cam-img');
-    img.src = ''; img.style.display = 'none';
-    document.getElementById('cam-placeholder').style.display = 'flex';
-    document.getElementById('cam-btn').textContent = 'Stream';
-    document.getElementById('cam-btn').className = 'bar-btn';
-    setCamBadge('off', 'Off');
-  }
-
-  function setCamBadge(cls, txt) {
-    const b = document.getElementById('cam-badge');
-    b.className = 'cam-badge ' + cls;
-    b.textContent = txt;
-  }
-
-  // ── Drive logic ──
-  const pressed = { fwd: false, bwd: false, lft: false, rgt: false };
-
-  function resolveCmd() {
-    const { fwd, bwd, lft, rgt } = pressed;
-    if (fwd && rgt) return { cmd: 'FWD_RIGHT',  label: 'MAJU+KANAN',   cls: 'combo' };
-    if (fwd && lft) return { cmd: 'FWD_LEFT',   label: 'MAJU+KIRI',    cls: 'combo' };
-    if (bwd && rgt) return { cmd: 'BWD_RIGHT',  label: 'MUNDUR+KANAN', cls: 'combo' };
-    if (bwd && lft) return { cmd: 'BWD_LEFT',   label: 'MUNDUR+KIRI',  cls: 'combo' };
-    if (fwd)        return { cmd: 'FORWARD',    label: 'MAJU',         cls: 'fwd'   };
-    if (bwd)        return { cmd: 'BACKWARD',   label: 'MUNDUR',       cls: 'bwd'   };
-    if (rgt)        return { cmd: 'RIGHT',      label: 'KANAN',        cls: 'turn'  };
-    if (lft)        return { cmd: 'LEFT',       label: 'KIRI',         cls: 'turn'  };
-    return           { cmd: 'STOP',      label: 'STOP',         cls: ''      };
-  }
-
-  let lastCmd = '';
-  function update() {
-    const r = resolveCmd();
-    const pill = document.getElementById('cmd-pill');
-    pill.textContent = r.label;
-    pill.className = r.cls;
-    if (r.cmd !== lastCmd) {
-      lastCmd = r.cmd;
-      if (connected && ws && ws.readyState === 1) ws.send(JSON.stringify({ cmd: r.cmd }));
+      setCamBadge('off', 'Off');
     }
-  }
+    function setCamBadge(cls, txt) {
+      const b = document.getElementById('cam-badge');
+      b.className = 'cam-badge ' + cls; b.textContent = txt;
+    }
 
-  function setKey(key, val) {
-    pressed[key] = val;
-    document.querySelector('.ctrl-btn[data-key="' + key + '"]')?.classList.toggle('pressed', val);
-    update();
-  }
+    // ── Slider ──
+    const SNAP = 8;
+    const sliderVal = { left: 0, right: 0 };
 
-  document.querySelectorAll('.ctrl-btn').forEach(btn => {
-    const key = btn.dataset.key;
-    btn.addEventListener('mousedown',   () => setKey(key, true));
-    btn.addEventListener('mouseup',     () => setKey(key, false));
-    btn.addEventListener('mouseleave',  () => setKey(key, false));
-    btn.addEventListener('touchstart',  e => { e.preventDefault(); setKey(key, true);  }, { passive: false });
-    btn.addEventListener('touchend',    e => { e.preventDefault(); setKey(key, false); }, { passive: false });
-    btn.addEventListener('touchcancel', e => { e.preventDefault(); setKey(key, false); }, { passive: false });
-  });
+    function setupSlider(side) {
+      const track = document.getElementById('slider-' + side);
+      const fill = document.getElementById('fill-' + side);
+      const thumb = document.getElementById('thumb-' + side);
+      const pctEl = document.getElementById('pct-' + side);
+      let activeTouchId = null;
 
-  const keyMap = { ArrowUp:'fwd', ArrowDown:'bwd', ArrowLeft:'lft', ArrowRight:'rgt', w:'fwd', s:'bwd', a:'lft', d:'rgt' };
-  document.addEventListener('keydown', e => { if (keyMap[e.key] && !pressed[keyMap[e.key]]) setKey(keyMap[e.key], true); });
-  document.addEventListener('keyup',   e => { if (keyMap[e.key]) setKey(keyMap[e.key], false); });
+      function valFromY(clientY) {
+        const rect = track.getBoundingClientRect();
+        const rel = (clientY - rect.top) / rect.height;
+        const val = Math.round((0.5 - Math.max(0, Math.min(1, rel))) * 200);
+        return Math.max(-100, Math.min(100, val));
+      }
 
-  // ── WebSocket ──
-  let ws = null, connected = false, pingTimer = null, pingStart = 0;
+      function apply(rawVal) {
+        const val = Math.abs(rawVal) < SNAP ? 0 : rawVal;
+        sliderVal[side] = val;
 
-  function toggleConnect() {
-    if (connected) { ws.close(); return; }
-    const ip = document.getElementById('ws-ip').value.trim();
-    try { ws = new WebSocket('ws://' + ip + '/ws'); } catch(e) { return; }
-    ws.onopen = () => {
-      connected = true;
-      document.getElementById('ws-status').textContent = 'WS: On';
-      document.getElementById('ws-status').className = 'ws-on';
-      document.getElementById('connect-btn').textContent = 'Putus';
-      document.getElementById('connect-btn').className = 'bar-btn ws-on';
-      pingTimer = setInterval(() => {
-        if (ws.readyState === 1) { pingStart = Date.now(); ws.send(JSON.stringify({ cmd: 'PING' })); }
-      }, 2000);
-    };
-    ws.onmessage = e => {
-      try {
-        const d = JSON.parse(e.data);
-        if (d.type === 'PONG') document.getElementById('ping-badge').textContent = (Date.now() - pingStart) + 'ms';
-      } catch(_) {}
-    };
-    ws.onclose = () => {
-      connected = false; clearInterval(pingTimer);
-      document.getElementById('ws-status').textContent = 'WS: Off';
-      document.getElementById('ws-status').className = 'ws-off';
-      document.getElementById('connect-btn').textContent = 'Connect';
-      document.getElementById('connect-btn').className = 'bar-btn';
-      document.getElementById('ping-badge').textContent = '--ms';
-      Object.keys(pressed).forEach(k => setKey(k, false));
-    };
-  }
-</script>
+        // Thumb: top 50% = val 0, top 0% = val 100, top 100% = val -100
+        thumb.style.top = (50 - val / 2) + '%';
+
+        // Fill
+        if (val > 0) {
+          const h = (val / 100) * 50;
+          fill.style.top = (50 - h) + '%';
+          fill.style.height = h + '%';
+        } else if (val < 0) {
+          const h = (Math.abs(val) / 100) * 50;
+          fill.style.top = '50%';
+          fill.style.height = h + '%';
+        } else {
+          fill.style.height = '0%';
+        }
+
+        const dir = val > 0 ? 'fwd' : val < 0 ? 'bwd' : '';
+        track.className = 'vslider-track' + (dir ? ' ' + dir : '');
+        pctEl.className = 'pct-display' + (dir ? ' ' + dir : '');
+        pctEl.textContent = val === 0 ? '0%' : (val > 0 ? '+' : '') + val + '%';
+
+        sendDrive();
+      }
+
+      function release() { activeTouchId = null; apply(0); }
+
+      // Mouse
+      track.addEventListener('mousedown', e => apply(valFromY(e.clientY)));
+      document.addEventListener('mousemove', e => {
+        if (e.buttons & 1) {
+          // only if mouse is over or dragging from this track
+          const rect = track.getBoundingClientRect();
+          const inX = e.clientX >= rect.left && e.clientX <= rect.right;
+          // allow drag even if mouse leaves track horizontally
+          if (activeTouchId === 'mouse') apply(valFromY(e.clientY));
+        }
+      });
+      track.addEventListener('mousedown', () => { activeTouchId = 'mouse'; });
+      document.addEventListener('mouseup', () => {
+        if (activeTouchId === 'mouse') release();
+      });
+
+      // Touch — track individual finger
+      track.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (activeTouchId !== null) return; // already tracking a finger
+        const t = e.changedTouches[0];
+        activeTouchId = t.identifier;
+        apply(valFromY(t.clientY));
+      }, { passive: false });
+
+      document.addEventListener('touchmove', e => {
+        if (activeTouchId === null) return;
+        for (const t of e.changedTouches) {
+          if (t.identifier === activeTouchId) { apply(valFromY(t.clientY)); break; }
+        }
+      }, { passive: false });
+
+      document.addEventListener('touchend', e => {
+        for (const t of e.changedTouches) {
+          if (t.identifier === activeTouchId) { release(); break; }
+        }
+      });
+      document.addEventListener('touchcancel', e => {
+        for (const t of e.changedTouches) {
+          if (t.identifier === activeTouchId) { release(); break; }
+        }
+      });
+
+      // Init after layout
+      requestAnimationFrame(() => apply(0));
+    }
+
+    setupSlider('left');
+    setupSlider('right');
+
+    // ── WebSocket ──
+    let ws = null, connected = false, pingTimer = null, pingStart = 0;
+    let lastL = null, lastR = null;
+
+    function sendDrive() {
+      const l = sliderVal.left, r = sliderVal.right;
+      if (l === lastL && r === lastR) return;
+      lastL = l; lastR = r;
+      if (connected && ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({ left: l, right: r }));
+      }
+    }
+
+    function toggleConnect() {
+      if (connected) { ws.close(); return; }
+      const ip = document.getElementById('ws-ip').value.trim();
+      try { ws = new WebSocket('ws://' + ip + '/ws'); } catch (e) { return; }
+      ws.onopen = () => {
+        connected = true;
+        document.getElementById('ws-status').textContent = 'WS: On';
+        document.getElementById('ws-status').className = 'ws-on';
+        document.getElementById('connect-btn').textContent = 'Putus';
+        document.getElementById('connect-btn').className = 'bar-btn ws-on';
+        pingTimer = setInterval(() => {
+          if (ws.readyState === 1) { pingStart = Date.now(); ws.send(JSON.stringify({ cmd: 'PING' })); }
+        }, 2000);
+      };
+      ws.onmessage = e => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.type === 'PONG') document.getElementById('ping-badge').textContent = (Date.now() - pingStart) + 'ms';
+        } catch (_) { }
+      };
+      ws.onclose = () => {
+        connected = false; clearInterval(pingTimer);
+        document.getElementById('ws-status').textContent = 'WS: Off';
+        document.getElementById('ws-status').className = 'ws-off';
+        document.getElementById('connect-btn').textContent = 'Connect';
+        document.getElementById('connect-btn').className = 'bar-btn';
+        document.getElementById('ping-badge').textContent = '--ms';
+      };
+    }
+  </script>
 </body>
+
 </html>
