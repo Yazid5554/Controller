@@ -215,7 +215,7 @@
 
 <script>
   document.addEventListener('touchmove', e => { if (!e.target.closest('#led-panel')) e.preventDefault(); }, { passive: false });
-  document.addEventListener('touchstart', e => { const t=e.target; if (t.tagName!=='INPUT'&&t.tagName!=='BUTTON'&&!t.closest('label')) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchstart', e => { if (!e.target.closest('button, input, label')) e.preventDefault(); }, { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
 
   // Camera
